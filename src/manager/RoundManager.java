@@ -40,15 +40,35 @@ public class RoundManager {
     public void allowLastTurnForOtherPlayers(int revealingPlayerIndex) {
         for (int i = 0; i < playerScores.size(); i++) {
             if (i != revealingPlayerIndex) {
-                // Ensure players with removed columns can complete their last turn correctly
+                // Check if this player has not revealed all cards
                 if (!hasPlayerRevealedAllCards(i)) {
-                    System.out.println("Player " + (i + 1) + " has one more turn to flip cards.");
-                    // Logic to give the player their last turn would be implemented in the UI/game
-                    // loop
+                    System.out.println("Player " + (i + 1) + " has one last turn to replace a card.");
                 }
             }
         }
     }
+    
+    public boolean areAllOtherPlayersTurnsCompleted(int revealingPlayerIndex) {
+        for (int i = 0; i < playerScores.size(); i++) {
+            if (i != revealingPlayerIndex && !hasPlayerReplacedCard(i)) {
+                return false; // Not all players have completed their turns
+            }
+        }
+        return true; // All other players have completed their turns
+    }
+    
+    private boolean hasPlayerReplacedCard(int playerIndex) {
+        for (Card card : playersCards.get(playerIndex)) {
+            // Skip null cards (cards removed from the grid)
+            if (card == null) continue;
+            
+            // If any non-null card is face-up, it indicates the player has replaced a card
+            if (card.isFaceUp()) {
+                return true;
+            }
+        }
+        return false;
+    }   
 
     // Update the scores for all players and check for doubling the revealing
     // player's score
@@ -104,6 +124,7 @@ public class RoundManager {
     }
 
     private void flipTwoRandomCards(ArrayList<Card> playerCards) {
+        @SuppressWarnings("unused")
         ArrayList<Integer> faceUpIndices = new ArrayList<>();
 
         // Ensure no cards are flipped at the start
@@ -125,29 +146,6 @@ public class RoundManager {
             int cardIndex = cardIndices.get(i);
             playerCards.get(cardIndex).setFaceUp(true);
         }
-    }
-
-    public boolean areAllOtherPlayersTurnsCompleted(int revealingPlayerIndex) {
-        for (int i = 0; i < playerScores.size(); i++) {
-            if (i != revealingPlayerIndex && !hasPlayerReplacedCard(i)) {
-                return false; // Not all players have completed their turns
-            }
-        }
-        return true; // All other players have completed their turns
-    }
-
-    private boolean hasPlayerReplacedCard(int playerIndex) {
-        for (Card card : playersCards.get(playerIndex)) {
-            // Skip null cards
-            if (card == null) {
-                continue;
-            }
-            // If any non-null card is face-up, it indicates the player has taken action
-            if (card.isFaceUp()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public boolean isRoundActive() {
