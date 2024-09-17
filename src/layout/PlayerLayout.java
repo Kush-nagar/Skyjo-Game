@@ -11,13 +11,11 @@ import Pile.DiscardPile;
 import java.util.ArrayList;
 import java.util.Random;
 import java.awt.image.*;
-import java.io.File;
 import java.io.IOException;
 
 import score.PlayerScore;
 import manager.RoundManager;
-import home.HomeScreen;  // or whatever package HomeScreen is in
-
+import home.HomeScreen; // or whatever package HomeScreen is in
 
 public class PlayerLayout extends JPanel implements MouseListener, MouseMotionListener {
     private ArrayList<ArrayList<Card>> playersCards;
@@ -39,8 +37,6 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
     private RoundManager roundManager;
     private int roundNumber = 1; // Add a variable to track the current round
     private BufferedImage backgroundImage;
-    private ArrayList<ArrayList<PlayerScore>> allRoundScores;
-    private ScoreCard scoreCard;
 
     public PlayerLayout(int numPlayers) {
         this.numPlayers = numPlayers;
@@ -60,7 +56,6 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
             e.printStackTrace();
         }
 
-        
         // Initialize cards for each player and their scores
         Card.initializeCards();
         Random random = new Random();
@@ -98,30 +93,30 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
         }
 
         setPreferredSize(new Dimension(400 + (numPlayers * 200), 600));
-        
+
         // Set the layout to null for absolute positioning
         setLayout(null);
 
         // Create the instruction label
-        instructionLabel = new JLabel("Player 1, click the draw pile or drag the card from the discard pile to start your turn");
+        instructionLabel = new JLabel(
+                "Player 1, click the draw pile or drag the card from the discard pile to start your turn");
         instructionLabel.setForeground(Color.white);
         instructionLabel.setHorizontalAlignment(JLabel.CENTER);
 
         // Set the size and position (x, y coordinates) of the instructionLabel
         instructionLabel.setFont(new Font("Monospace", Font.BOLD, 18));
-        instructionLabel.setBounds(500, 400, 1000, 30);  // Example: x=100, y=50, width=400, height=30
+        instructionLabel.setBounds(500, 400, 1000, 30); // Example: x=100, y=50, width=400, height=30
 
         // Add the label to the panel
         add(instructionLabel);
 
         setLayout(new BorderLayout());
         roundManager = new RoundManager(playerScores, playersCards);
-        
+
         // Use a FlowLayout at the bottom for the buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Spacing between buttons
         buttonPanel.setBackground(Color.black); // Set the background color for the button panel
 
-        
         // Next Player button
         nextPlayerButton = new JButton("Next Player");
         nextPlayerButton.setPreferredSize(new Dimension(120, 30)); // Set a smaller width and height
@@ -135,7 +130,7 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
             }
         });
         buttonPanel.add(nextPlayerButton);
-        
+
         // Show Scores button
         JButton scoreCardButton = new JButton("Show Scores");
         scoreCardButton.setPreferredSize(new Dimension(120, 30)); // Set a smaller width and height
@@ -145,18 +140,17 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
             @Override
             public void actionPerformed(ActionEvent e) {
                 pauseGameAndShowScoreCard(); // Call method to pause the game and show scores
-                if(nextPlayerButton.isEnabled()){
+                if (nextPlayerButton.isEnabled()) {
                     nextPlayerButton.setEnabled(true);
-                }else{
+                } else {
                     nextPlayerButton.setEnabled(false);
                 }
             }
         });
         buttonPanel.add(scoreCardButton);
-        
+
         // Add the button panel to the bottom
         add(buttonPanel, BorderLayout.SOUTH);
-        
 
         addMouseListener(this);
         addMouseMotionListener(this);
@@ -190,12 +184,12 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
 
         // Draw the draw pile of cards
         DrawPile.drawPileCards(g, 1);
-        
+
         // Draw the label "Draw Pile" under the draw pile
         g.setColor(Color.black); // Set color for the text
         g.setFont(new Font("Monospace", Font.BOLD, 16));
-        int drawPileX = 1020;  // Adjust this X value to match the draw pile's position
-        int drawPileY = 500 + Card.getCardHeight() + 30;  // Positioning the text slightly below the draw pile
+        int drawPileX = 1020; // Adjust this X value to match the draw pile's position
+        int drawPileY = 500 + Card.getCardHeight() + 30; // Positioning the text slightly below the draw pile
         g.drawString("Draw Pile", drawPileX, drawPileY);
 
         // Draw the discard pile of cards
@@ -220,7 +214,7 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
 
         for (int i = 0; i < numPlayers; i++) {
             g.setColor(Color.YELLOW);
-            g.drawString("Player " + (i + 1) + " Score: " + playerScores.get(i).getScore(),  scoreX, scoreY + (i * 30));
+            g.drawString("Player " + (i + 1) + " Score: " + playerScores.get(i).getScore(), scoreX, scoreY + (i * 30));
         }
 
         // Draw the current round number in the bottom right corner
@@ -266,7 +260,8 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
                 canDraw = false; // Disable drawing another card
 
                 instructionLabel.setText(
-                        "Player " + (currentPlayer + 1) + ", drag the card to your grid to replace one of your cards or to the discard pile.");
+                        "Player " + (currentPlayer + 1)
+                                + ", drag the card to your grid to replace one of your cards or to the discard pile.");
                 repaint();
             }
         }
@@ -315,7 +310,8 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
                 return;
             }
 
-            // Handle discarding a card from the draw pile to the discard pile
+            // Only discard the card if it's actively dragged and released over the discard
+            // pile
             if (discardPile.isDiscardPileClicked(e.getX(), e.getY())) {
                 discardPile.add(drawnCard); // Add the drawn card to the discard pile
                 drawnCard = null;
@@ -356,10 +352,21 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
                     // Check and remove columns with matching cards
                     checkAndRemoveMatchingColumns();
                 } else {
-                    // If not placed on a valid card, return the card to the discard pile
-                    discardPile.add(drawnCard);
-                    drawnCard = null;
-                    repaint();
+                    // Check if the clicked card is the drawn card
+                    clickedCardIndex = Card.getClickedCard(playersCards.get(currentPlayer), 100, 350, e.getX(),
+                            e.getY(), 1.0);
+
+                    if (clickedCardIndex != Integer.MIN_VALUE) {
+                        Card clickedCard = playersCards.get(currentPlayer).get(clickedCardIndex);
+
+                        // If the clicked card is not the drawn card, display the instruction label
+                        // message
+                        if (clickedCard != drawnCard) {
+                            instructionLabel.setText("You must place the card in your grid or the discard pile.");
+                        }
+
+                        repaint();
+                    }
                 }
             }
         }
@@ -418,7 +425,8 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
         updatePlayerScore();
 
         currentPlayer = (currentPlayer + 1) % numPlayers;
-        instructionLabel.setText("Player " + (currentPlayer + 1) + ", click the draw pile or drag the card from the discard pile to start your turn.");
+        instructionLabel.setText("Player " + (currentPlayer + 1)
+                + ", click the draw pile or drag the card from the discard pile to start your turn.");
         nextPlayerButton.setEnabled(false);
         canDraw = true;
         cardDrawn = false;
@@ -439,44 +447,31 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
     // Method to handle when a player reveals all their cards
     private void handlePlayerRevealsAllCards(int revealingPlayerIndex) {
         // Start the process of giving the remaining players their last turn
-        int remainingPlayers = numPlayers - 1; // All other players except the one who revealed all cards
-        giveRemainingPlayersLastTurn(revealingPlayerIndex, remainingPlayers);
+        giveRemainingPlayersLastTurn(revealingPlayerIndex);
     }
 
-    // Method to give remaining players their last turns
-    private void giveRemainingPlayersLastTurn(int revealingPlayerIndex, int remainingPlayers) {
-        moveToNextRemainingPlayer(revealingPlayerIndex);
+    private void giveRemainingPlayersLastTurn(int revealingPlayerIndex) {
+        // Loop through all players except the one who revealed all their cards
+        for (int i = 0; i < numPlayers; i++) {
+            if (i != revealingPlayerIndex && !roundManager.hasPlayerRevealedAllCards(i)) {
+                moveToNextRemainingPlayer(revealingPlayerIndex);
 
-        // Give the current player a chance to replace a card
-        if (!roundManager.hasPlayerRevealedAllCards(currentPlayer)) {
-            // Let the player replace a card
-            instructionLabel.setText("Player " + (currentPlayer + 1) + ", this is your last chance to replace a card.");
-            nextPlayerButton.setEnabled(true);
-            canDraw = true;
+                // Allow player to replace one card
+                instructionLabel
+                        .setText("Player " + (currentPlayer + 1) + ", this is your last turn to replace a card.");
+                nextPlayerButton.setEnabled(true);
+                canDraw = true;
 
-            // Wait for the player to replace a card (handled by event listeners)
-
-            // After replacement, reveal any remaining face-down cards
-            revealRemainingFaceDownCards();
-
-        } else {
-            // If all cards are already revealed, skip replacing and move to the next player.
-            instructionLabel.setText("Player " + (currentPlayer + 1) + " has no more cards to replace. Moving to the next player.");
-            nextPlayerButton.setEnabled(false);
+                // Reveal any remaining face-down cards after the player's turn
+                revealRemainingFaceDownCards();
+            }
         }
 
-        // Recursively give turns to remaining players
-        if (remainingPlayers > 0) {
-            remainingPlayers--;
-            giveRemainingPlayersLastTurn(revealingPlayerIndex, remainingPlayers);
-        } else {
-            // Once all remaining players have had their last turn, complete the round
-            roundManager.updateScoresAndCheckForDoubling(revealingPlayerIndex);
-            showRoundCompletedPopup();
-        }
+        // Once all players have had their last turn, complete the round
+        roundManager.updateScoresAndCheckForDoubling(revealingPlayerIndex);
+        showRoundCompletedPopup();
     }
 
-    // Method to reveal remaining face-down cards for the current player
     private void revealRemainingFaceDownCards() {
         ArrayList<Card> playerCards = playersCards.get(currentPlayer);
         for (Card card : playerCards) {
@@ -489,18 +484,22 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
         repaint();
     }
 
-    // Move to the next remaining player and give them a turn
     private void moveToNextRemainingPlayer(int revealingPlayerIndex) {
         do {
             currentPlayer = (currentPlayer + 1) % numPlayers; // Move to the next player
         } while (roundManager.hasPlayerRevealedAllCards(currentPlayer) && currentPlayer != revealingPlayerIndex);
 
-        // Give the current player one last turn
-        instructionLabel.setText("Player " + (currentPlayer + 1) + ", this is your last turn. Click the draw pile to start.");
-        nextPlayerButton.setEnabled(true);
+        // Provide a final turn for players who haven't revealed all cards
+        if (!roundManager.hasPlayerRevealedAllCards(currentPlayer)) {
+            instructionLabel.setText("Player " + (currentPlayer + 1) + ", this is your last chance to replace a card.");
+            nextPlayerButton.setEnabled(true);
+            canDraw = false;
+        } else {
+            instructionLabel.setText("Player " + (currentPlayer + 1) + " has no more cards to replace.");
+            nextPlayerButton.setEnabled(false);
+        }
         repaint();
     }
-
 
     private void resetGameStateForNewRound() {
         // Reset player states and game variables for the new round
@@ -533,15 +532,15 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
         // Determine if the current round has ended
         boolean roundEnded = roundManager.isRoundFinished(); // Use the new method
 
-        // Show the score card (without passing roundNumber, since it's no longer needed)
-        ScoreCard scoreCard = new ScoreCard((JFrame) SwingUtilities.getWindowAncestor(this), allRoundScores, numPlayers, roundEnded); // Pass roundEnded status
+        // Show the score card (without passing roundNumber, since it's no longer
+        // needed)
+        ScoreCard scoreCard = new ScoreCard((JFrame) SwingUtilities.getWindowAncestor(this), allRoundScores, numPlayers,
+                roundEnded); // Pass roundEnded status
         scoreCard.setVisible(true); // Modal dialog, will pause game until closed
 
         // Resume game state after score card is closed
         resumeGame();
     }
-
-    
 
     private void resumeGame() {
         canDraw = true;
@@ -636,7 +635,7 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
         // Find the player with the least score
         int minScore = Integer.MAX_VALUE;
         int winningPlayerIndex = -1;
-    
+
         // Iterate through all players to find the player with the least score
         for (int i = 0; i < playerScores.size(); i++) {
             int playerScore = playerScores.get(i).getScore();
@@ -645,25 +644,24 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
                 winningPlayerIndex = i; // Save the index of the winning player
             }
         }
-    
+
         // Display a dialog showing the game is over and offer to play again
         String winningPlayer = "Player " + (winningPlayerIndex + 1); // Adjust for 1-based player numbering
         String message = "Game over! " + winningPlayer + " wins! Would you like to play again?";
-    
+
         // Custom options for JOptionPane: "Play Again" and "Exit"
-        Object[] options = {"Play Again", "Exit"};
-        
+        Object[] options = { "Play Again", "Exit" };
+
         int result = JOptionPane.showOptionDialog(
-            this, 
-            message, 
-            "Game Over", 
-            JOptionPane.YES_NO_OPTION, 
-            JOptionPane.INFORMATION_MESSAGE, 
-            null, 
-            options, 
-            options[0]
-        );
-    
+                this,
+                message,
+                "Game Over",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]);
+
         // Handle the user's response
         if (result == JOptionPane.YES_OPTION) {
             // Reset the game if "Play Again" is selected
@@ -672,7 +670,7 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
             // Exit the game or close the window
             System.exit(0);
         }
-    
+
         // Disable further actions (e.g., disable buttons, prevent drawing cards)
         nextPlayerButton.setEnabled(false);
         canDraw = false;
@@ -680,18 +678,18 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
         drawnCard = null;
         hasReplacedCard = false;
         flipCardPromptActive = false;
-    
+
         // Optionally, repaint the board to reflect the final state
         repaint();
     }
-    
+
     private void resetGame() {
         // Close the current game screen (dispose the current frame or panel)
         JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
         if (topFrame != null) {
             topFrame.dispose(); // Close the current game window
         }
-    
+
         // Reopen the home screen safely on the Event Dispatch Thread
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -700,6 +698,5 @@ public class PlayerLayout extends JPanel implements MouseListener, MouseMotionLi
             }
         });
     }
-    
-          
+
 }
